@@ -1,0 +1,98 @@
+﻿@using System.Globalization;
+@inject TimeActivityObjectStore timeActivityObjectStore
+@inject CheckInStateObjectStore checkInStateObjectStore
+@inject NavigationManager navigationManager
+@inject BlazorElement title
+@inject BlazorElement formcard
+@inject BlazorElement buttons
+@page "/AddTimeActivity/{Date}"
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="py-8">
+    <div class=" @title">
+        <MudText Style="--mud-typography-body1-size: 1.5rem;" Align="Align.Center">@DateTimeDate.ToLongDateString()</MudText>
+    </div>
+     <div class="ax-hide @formcard">
+        <MudCard>
+            <MudForm @ref="form">
+                <MudCardContent>
+                    <MudTimePicker @bind-Time="startTime" Class="ma-2" Label="Start time" AmPm="true" />
+                    <MudTimePicker @bind-Time="stopTime" Class="ma-2" Label="Stop time" AmPm="true" />
+
+                    <MudTextField T="string" Label="Description" Class="ma-2" Variant="Variant.Text" @bind-Text="text" Lines="3" />
+                </MudCardContent>
+            </MudForm>
+         </MudCard>
+    </div>
+     <div class="ax-hide @buttons">
+        <MudPaper Class="d-flex justify-space-between flex-grow-1 pa-4 mt-4" Elevation="0">
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" DisableElevation="true" OnClick="@Back">Back</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@Save" Class="justify-end">Save</MudButton>
+        </MudPaper>
+    </div>
+</MudContainer>
+
+@code {
+    MudForm? form;
+    TimeSpan? startTime;
+    TimeSpan? stopTime;
+    string text;
+
+    [Parameter]
+    public string Date { get; set; }
+    private DateTime DateTimeDate { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (Date is not null)
+        {
+            DateTimeDate = DateTime.ParseExact(Date, "yyyyMMdd", CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            DateTimeDate = DateTime.Now.Date;
+        }
+
+        startTime = DateTime.Now.TimeOfDay;
+        stopTime = DateTime.Now.TimeOfDay;
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.WhenAll(
+               title.MoveIn().Play(),
+               title.FadeIn().Play(),
+               formcard.MoveIn().Play(200),
+               formcard.FadeIn().Play(200),
+               buttons.MoveIn().Play(400),
+               buttons.FadeIn().Play(400)
+            );
+        }
+    }
+
+    void Back()
+    {
+        navigationManager.NavigateTo("Day");
+    }
+
+    async Task Save()
+    {
+        await form.Validate();
+
+        if (!form.IsValid)
+        {
+
+        }
+
+        var timeActivity = new TimeActivity();
+        timeActivity.Start = DateTimeDate + startTime.Value;
+        timeActivity.Stop = DateTimeDate + stopTime.Value;
+        timeActivity.Duration = timeActivity.Stop - timeActivity.Start;
+        timeActivity.keyDay = DateTimeDate.ToString("yyyyMMdd");
+        timeActivity.keyMonth = DateTimeDate.ToString("yyyyMM");
+        await timeActivityObjectStore.Add(timeActivity);
+
+        navigationManager.NavigateTo($"Day/{timeActivity.keyDay}");
+    }
+}

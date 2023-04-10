@@ -1,0 +1,22 @@
+﻿@implements IAsyncDisposable
+
+@code {
+    Timer? timer;
+
+    [Parameter]
+    public EventCallback Tick { get; set; }
+
+    protected override void OnInitialized()
+    {
+        timer = new Timer(new TimerCallback(_ => Tick.InvokeAsync()), null, 1000, 1000);
+        base.OnInitialized();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (timer is not null)
+        {
+            await timer.DisposeAsync();
+        }
+    }
+}

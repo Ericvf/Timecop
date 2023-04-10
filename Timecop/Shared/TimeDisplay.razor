@@ -1,0 +1,10 @@
+﻿@using Timecop.Services;
+<TimerComponent Tick="@(() => InvokeAsync(() => StateHasChanged()))" />
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="py-8">
+    <MudCard>
+        <MudCardContent>
+            <MudText Align="Align.Center" Style="--mud-typography-body1-size: 3rem;">@DateTime.Now.ToLongTimeString()</MudText>
+            <MudText Align="Align.Center" Style="--mud-typography-body1-size: 1rem;">@DateTime.Now.ToLongDateString()</MudText>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>

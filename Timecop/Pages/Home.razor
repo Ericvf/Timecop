@@ -1,0 +1,77 @@
+﻿@inject ICheckInOutService checkInOutService
+@inject ISnackbar Snackbar
+@inject BlazorElement timeDisplay
+@inject BlazorElement checkinGadget
+@inject BlazorElement checkin
+@inject BlazorElement checkout
+@page "/Home"
+
+<TimerComponent Tick="@(() => InvokeAsync(() => StateHasChanged()))" />
+
+<div class="ax-hide @timeDisplay">
+    <TimeDisplay />
+</div>
+
+@if (state != null)
+{
+    <div class="ax-hide @checkinGadget">
+        <MudGrid Justify="Justify.Center"  MaxWidth="MaxWidth.ExtraSmall">
+            @if (!state.IsCheckedIn)
+            {
+                <MudItem Class="d-flex align-center justify-center mud-width-full">
+                    <MudButton Class="@checkin" Variant="Variant.Filled" Size="Size.Large" Color="Color.Tertiary" OnClick="Click_Checkin">Check-in</MudButton>
+                </MudItem>
+
+                <MudText>You are currently not checked in</MudText>
+            }
+            else
+            {
+                <MudItem Class="d-flex align-center justify-center mud-width-full">
+                    <MudButton Class="@checkout" Variant="Variant.Filled" Size="Size.Large" Color="Color.Warning" OnClick="Click_Checkout">Check-out</MudButton>
+                </MudItem>
+                <MudItem Class="d-flex align-center justify-center mud-width-full">
+                    <MudText>You checked in since @state.CheckInDate.ToShortTimeString()</MudText>
+                </MudItem>
+                <MudText>@((DateTime.Now - state.CheckInDate).FriendlyDisplay(true))</MudText>
+            }
+        </MudGrid>
+    </div>
+}
+
+@code {
+    CheckInState state;
+
+    protected async override Task OnInitializedAsync()
+    {
+        state = await checkInOutService.GetState();
+        await InvokeAsync(() => StateHasChanged());
+
+        await Task.WhenAll(
+            timeDisplay.FadeIn().Play(),
+            timeDisplay.MoveIn().Play(),
+            checkinGadget.FadeIn().Play(200),
+            checkinGadget.MoveIn().Play(200)
+        );
+    }
+
+    async Task Click_Checkin()
+    {
+        await checkinGadget.FadeOut(500).Play();
+
+        await checkInOutService.Checkin(state);
+        await InvokeAsync(() => StateHasChanged());
+
+        await checkinGadget.FadeIn(500).Play();
+    }
+
+    async Task Click_Checkout()
+    {
+        await checkinGadget.FadeOut(500).Play();
+
+        await checkInOutService.Checkout(state);
+        Snackbar.Add($"Time Activity added. ({state.CheckInDate.ToShortTimeString()} - {state.CheckInDate.ToShortTimeString()})", severity: Severity.Success);
+        await InvokeAsync(() => StateHasChanged());
+
+        await checkinGadget.FadeIn(500).Play();
+    }
+}

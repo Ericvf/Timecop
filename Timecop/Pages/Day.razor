@@ -1,0 +1,173 @@
+﻿@using System.Globalization;
+@inject TimeActivityObjectStore timeActivityObjectStore
+@inject CheckInStateObjectStore checkInStateObjectStore
+@inject NavigationManager navigationManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject BlazorElement root
+@inject BlazorElement title
+@inject BlazorElement grid
+@inject BlazorElement stats
+@page "/Day/{Date?}"
+
+<div class="@root">
+    @if (timeActivities is not null)
+    {
+        <div class="@title">
+            <MudContainer Class="d-flex justify-space-between py-8" Style="margin:0">
+                <MudFab Color="Color.Surface" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="Prev" Size="Size.Small" />
+                <MudText Style="--mud-typography-body1-size: 1.5rem;" Align="Align.Center">@DateTimeDate.ToString("d MMM yyyy")</MudText>
+                <MudFab Color="Color.Surface" StartIcon="@Icons.Material.Filled.ArrowForward" OnClick="Next" Size="Size.Small" />
+            </MudContainer>
+        </div>
+
+        <div class="@grid">
+            @if (timeActivities.Count() > 0)
+            {
+                <MudDataGrid Items="@timeActivities" Filterable="false" SortMode="@SortMode.None" Groupable="false" Dense="true">
+                    <Columns>
+                        <PropertyColumn Property="x => x.Start.ToLongTimeString()" Title="Start" />
+                        <PropertyColumn Property="x => x.Stop.ToLongTimeString()" Title="Stop" />
+                        <PropertyColumn Property="x => x.Duration.FriendlyDisplay(true)" Title="Duration" />
+                        <TemplateColumn CellClass="d-flex justify-end">
+                            <CellTemplate>
+                                <MudStack Row>
+                                <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="() => Edit(context.Item.key)" />
+                                <MudFab Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="() => Delete(context.Item.key)" />
+                            </MudStack>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+            </MudDataGrid>
+
+                <MudContainer Class="py-2">
+                    <MudText Align="Align.Right" Style="--mud-typography-body1-size: 0.8rem;">@(timeActivities?.Count() ?? 0) records</MudText>
+                </MudContainer>
+
+                <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="@stats">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Align="Align.Center" Style="--mud-typography-body1-size: 1.5rem;">@totalDuration.FriendlyDisplay(false)</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudContainer>
+            }
+            else
+            {
+                <MudContainer MaxWidth="MaxWidth.ExtraSmall">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Align="Align.Center" Style="--mud-typography-body1-size: 1.1rem;">There are no records yet, add some</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudContainer>
+
+            }
+            <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex justify-center py-8">
+                <MudFab StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary" Label="Add new activity" OnClick="Add" />
+            </MudContainer>
+        </div>
+    }
+</div>
+
+@code {
+
+    IEnumerable<TimeActivity> timeActivities;
+    TimeSpan totalDuration;
+    string dateKey;
+
+    [Parameter]
+    public string Date { get; set; }
+
+    private DateTime DateTimeDate { get; set; }
+
+    public string DayPrev => DateTimeDate.AddDays(-1).ToString("yyyyMMdd");
+
+    public string DayNext => DateTimeDate.AddDays(1).ToString("yyyyMMdd");
+
+    public async override Task SetParametersAsync(ParameterView parameters)
+    {
+        await base.SetParametersAsync(parameters);
+        await Reload();
+    }
+
+    async Task Reload()
+    {
+        if (Date is not null)
+        {
+            DateTimeDate = DateTime.ParseExact(Date, "yyyyMMdd", CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            DateTimeDate = DateTime.Now.Date;
+        }
+
+        dateKey = Date ?? DateTime.Now.ToString("yyyyMMdd");
+        timeActivities = await timeActivityObjectStore.GetByIndex("keyDay", dateKey);
+        totalDuration = new TimeSpan(timeActivities.Sum(x => x.Duration.Ticks));
+
+        await InvokeAsync(() => StateHasChanged());
+
+        await Animate();
+    }
+
+    Task Animate()
+    {
+        return Task.WhenAll(
+           root.Show().Play(),
+           title.MoveIn().Play(),
+           title.FadeIn().Play(),
+           grid.MoveIn().Play(200),
+           grid.FadeIn().Play(200),
+           stats.FadeIn().Play(400),
+           stats.MoveIn().Play(400)
+        );
+    }
+
+    async Task Prev()
+    {
+        await root.FadeOutRight(duration: 300).Play();
+
+        Date = DayPrev;
+        navigationManager.NavigateTo($"Day/{Date}");
+
+        await OnInitializedAsync();
+    }
+
+    async Task Next()
+    {
+        await root.FadeOutLeft(duration: 300).Play();
+
+        Date = DayNext;
+        navigationManager.NavigateTo($"Day/{Date}");
+
+        await OnInitializedAsync();
+    }
+
+    async Task Edit(int Id)
+    {
+        await root.FadeOut(duration: 300).Play();
+        navigationManager.NavigateTo($"EditTimeActivity/{Id}");
+    }
+
+
+    async Task Add()
+    {
+        await root.FadeOut(duration: 300).Play();
+        navigationManager.NavigateTo($"AddTimeActivity/{dateKey}");
+    }
+
+    async Task Delete(int Id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<TimeActivityDeleteDialog>("Warning", options);
+        var dialogResult = await dialog.Result;
+
+        if (!dialogResult.Canceled)
+        {
+            await timeActivityObjectStore.DeleteKey(Id);
+            Snackbar.Add("Activity deleted", severity: Severity.Info);
+            await Reload();
+        }
+    }
+}

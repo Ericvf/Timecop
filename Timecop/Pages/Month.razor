@@ -1,0 +1,156 @@
+﻿@using System.Globalization;
+@inject TimeActivityObjectStore timeActivityObjectStore
+@inject CheckInStateObjectStore checkInStateObjectStore
+@inject NavigationManager navigationManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject BlazorElement root
+@inject BlazorElement title
+@inject BlazorElement grid
+@inject BlazorElement stats
+@page "/Month/{Date?}"
+
+<div class="@root">
+    @if (timeActivities is not null)
+    {
+        <div class="@title">
+            <MudContainer Class="d-flex justify-space-between py-8" Style="margin:0">
+                <MudFab Color="Color.Surface" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="Prev" Size="Size.Small" />
+                <MudText Style="--mud-typography-body1-size: 1.5rem;" Align="Align.Center">@DateTimeDate.ToString("MMM yyyy")</MudText>
+                <MudFab Color="Color.Surface" StartIcon="@Icons.Material.Filled.ArrowForward" OnClick="Next" Size="Size.Small" />
+            </MudContainer>
+        </div>
+
+        <div class="@grid">
+
+            <MudDataGrid Items="@dayTimeActivities" Filterable="false" SortMode="@SortMode.None" Groupable="false" Dense="true">
+                <Columns>
+                    <TemplateColumn CellClass="d-flex justify-end">
+                        <CellTemplate>
+                            <MudContainer class="d-flex flex-grow-1 pa-0">
+                                <MudText Class="pa-2">@context.Item.day</MudText>
+                                <MudText Class="pa-2 flex-grow-1">@context.Item.duration.FriendlyDisplay(false)</MudText>
+                                <MudFab Color="Color.Surface" StartIcon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" OnClick="() => NavigateToDay(context.Item.key)" />
+                            </MudContainer>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+            </MudDataGrid>
+
+            @if (timeActivities.Count() > 0)
+            {
+                <MudContainer Class="py-2">
+                    <MudText Align="Align.Right" Style="--mud-typography-body1-size: 0.8rem;">@(timeActivities?.Count() ?? 0) records</MudText>
+                </MudContainer>
+
+                <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="@stats">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Align="Align.Center" Style="--mud-typography-body1-size: 1.5rem;">@totalDuration.FriendlyDisplay(false)</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudContainer>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    public record DayTimeActivity(string key, int day, TimeSpan duration);
+
+    IEnumerable<TimeActivity> timeActivities;
+    IEnumerable<DayTimeActivity> dayTimeActivities;
+    TimeSpan totalDuration;
+
+    [Parameter]
+    public string Date { get; set; }
+
+    private DateTime DateTimeDate { get; set; }
+
+    public string MonthPrev => DateTimeDate.AddMonths(-1).ToString("yyyyMM");
+
+    public string MonthNext => DateTimeDate.AddMonths(1).ToString("yyyyMM");
+
+    public async override Task SetParametersAsync(ParameterView parameters)
+    {
+        await base.SetParametersAsync(parameters);
+        await Reload();
+    }
+
+
+    async Task Reload()
+    {
+        if (Date is not null)
+        {
+            DateTimeDate = DateTime.ParseExact(Date, "yyyyMM", CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            DateTimeDate = DateTime.Now.Date;
+        }
+
+        var dateKey = Date ?? DateTime.Now.ToString("yyyyMM");
+
+        timeActivities = await timeActivityObjectStore.GetByIndex("keyMonth", dateKey);
+
+        dayTimeActivities =
+            (from day in Enumerable.Range(1, DateTime.DaysInMonth(DateTimeDate.Year, DateTimeDate.Month))
+             join timeActivity in timeActivities on day equals timeActivity.Start.Day into j
+             from subTimeActivity in j.DefaultIfEmpty()
+             group new
+             {
+                 day,
+                 subTimeActivity?.Duration
+             } by day into byDay
+             let keyDay = new DateTime(DateTimeDate.Year, DateTimeDate.Month, byDay.Key).ToString("yyyyMMdd")
+             let totalDuration = new TimeSpan(byDay.Sum(vv => vv.Duration?.Ticks ?? 0))
+             select new DayTimeActivity(keyDay, byDay.Key, totalDuration)
+        ).ToArray();
+
+        totalDuration = new TimeSpan(timeActivities.Sum(x => x.Duration.Ticks));
+
+        await InvokeAsync(() => StateHasChanged());
+
+        await Animate();
+    }
+
+    Task Animate()
+    {
+        return Task.WhenAll(
+           root.Show().Play(),
+           title.MoveIn().Play(),
+           title.FadeIn().Play(),
+           grid.MoveIn().Play(200),
+           grid.FadeIn().Play(200),
+           stats.FadeIn().Play(400),
+           stats.MoveIn().Play(400)
+        );
+    }
+
+    async Task Prev()
+    {
+        await root.FadeOutRight(duration: 300).Play();
+
+        Date = MonthPrev;
+        navigationManager.NavigateTo($"Month/{Date}");
+
+        await OnInitializedAsync();
+    }
+
+    async Task Next()
+    {
+        await root.FadeOutLeft(duration: 300).Play();
+
+        Date = MonthNext;
+        navigationManager.NavigateTo($"Month/{Date}");
+
+        await OnInitializedAsync();
+    }
+
+    async Task NavigateToDay(string key)
+    {
+        await root.FadeOutRight(duration: 300).Play();
+
+        navigationManager.NavigateTo($"Day/{key}");
+    }
+}

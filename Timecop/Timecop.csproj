@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Blazor.ClientStorage" Version="1.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.4" PrivateAssets="all" />
+		<PackageReference Include="MudBlazor" Version="6.2.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Update="wwwroot\AnimationExtensions.WAAPI.js">
+			<Pack>true</Pack>
+		</Content>
+	</ItemGroup>
+</Project>
