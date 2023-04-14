@@ -1,5 +1,36 @@
 ﻿namespace Timecop.Services
 {
+
+    //public interface IAuthorizationService
+    //{
+    //    Task StoreAccessToken(string accessToken);
+
+    //    Task<string> GetAccessToken();
+    //}
+
+    //public class AuthorizationService : IAuthorizationService
+    //{
+    //    private readonly CheckInStateObjectStore checkInStateObjectStore;
+
+    //    public AuthorizationService(CheckInStateObjectStore checkInStateObjectStore)
+    //    {
+    //        this.checkInStateObjectStore = checkInStateObjectStore;
+    //    }
+
+    //    public async Task<string> GetAccessToken()
+    //    {
+    //        var state = await checkInStateObjectStore.Get("root");
+    //        return state.AccessToken;
+    //    }
+
+    //    public async Task StoreAccessToken(string accessToken)
+    //    {
+    //        var state = await checkInStateObjectStore.Get("root");
+    //        state.AccessToken = accessToken;
+    //        await checkInStateObjectStore.Put(state);
+    //    }
+    //}
+
     public class CheckInOutService : ICheckInOutService
     {
         private readonly CheckInStateObjectStore checkInStateObjectStore;

@@ -30,5 +30,7 @@ namespace Timecop
 
         public DateTime CheckInDate { get; set; }
         public DateTime LastCheckoutDate { get; set; }
+
+        public string AccessToken { get; set; }
     }
 }

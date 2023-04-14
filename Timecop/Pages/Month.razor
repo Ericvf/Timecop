@@ -28,8 +28,8 @@
                     <TemplateColumn CellClass="d-flex justify-end">
                         <CellTemplate>
                             <MudContainer class="d-flex flex-grow-1 pa-0">
-                                <MudText Class="pa-2">@context.Item.day</MudText>
-                                <MudText Class="pa-2 flex-grow-1">@context.Item.duration.FriendlyDisplay(false)</MudText>
+                                <MudText Class="pa-2" Style="--mud-typography-body1-size: .875rem;">@context.Item.day</MudText>
+                                <MudText Class="pa-2 flex-grow-1" Style="--mud-typography-body1-size: 0.875rem;">@context.Item.duration.FriendlyDisplay(false)</MudText>
                                 <MudFab Color="Color.Surface" StartIcon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" OnClick="() => NavigateToDay(context.Item.key)" />
                             </MudContainer>
                         </CellTemplate>

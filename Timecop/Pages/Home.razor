@@ -4,7 +4,10 @@
 @inject BlazorElement checkinGadget
 @inject BlazorElement checkin
 @inject BlazorElement checkout
-@page "/Home"
+@inject NavigationManager navigationManager
+@inject IDialogService dialogService
+
+@page "/"
 
 <TimerComponent Tick="@(() => InvokeAsync(() => StateHasChanged()))" />
 
@@ -15,7 +18,7 @@
 @if (state != null)
 {
     <div class="ax-hide @checkinGadget">
-        <MudGrid Justify="Justify.Center"  MaxWidth="MaxWidth.ExtraSmall">
+        <MudGrid Justify="Justify.Center" MaxWidth="MaxWidth.ExtraSmall">
             @if (!state.IsCheckedIn)
             {
                 <MudItem Class="d-flex align-center justify-center mud-width-full">
@@ -29,9 +32,12 @@
                 <MudItem Class="d-flex align-center justify-center mud-width-full">
                     <MudButton Class="@checkout" Variant="Variant.Filled" Size="Size.Large" Color="Color.Warning" OnClick="Click_Checkout">Check-out</MudButton>
                 </MudItem>
-                <MudItem Class="d-flex align-center justify-center mud-width-full">
+
+                 <MudItem Class="d-flex align-center justify-center mud-width-full">
                     <MudText>You checked in since @state.CheckInDate.ToShortTimeString()</MudText>
+                    <MudIconButton OnClick="EditTimeClick" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" />
                 </MudItem>
+
                 <MudText>@((DateTime.Now - state.CheckInDate).FriendlyDisplay(true))</MudText>
             }
         </MudGrid>
@@ -40,10 +46,22 @@
 
 @code {
     CheckInState state;
+    MudTimePicker? t;
+
+    private async Task EditTimeClick()
+    {
+        var result = await TimePickerDialog2.ShowDialog(dialogService, state.CheckInDate.TimeOfDay);
+        if (result is not null)
+        {
+            state.CheckInDate = state.CheckInDate.Date + result.Value;
+            await InvokeAsync(() => StateHasChanged());
+        }
+    }
 
     protected async override Task OnInitializedAsync()
     {
         state = await checkInOutService.GetState();
+
         await InvokeAsync(() => StateHasChanged());
 
         await Task.WhenAll(

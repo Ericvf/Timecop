@@ -1,0 +1,18 @@
+﻿<MudDialog>
+    <DialogContent>
+         <MudTimePicker PickerVariant="PickerVariant.Static" @bind-Time="Time" AmPm="false"/>
+    </DialogContent>
+    <DialogActions>
+
+        <MudButton Class="ma-1" Variant="Variant.Filled" Edge="Edge.End" Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Class="ma-1" Variant="Variant.Filled" Edge="Edge.End" Color="Color.Primary" OnClick="Submit">Update</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public TimeSpan? Time { get; set; }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(Time));
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,54 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject NavigationManager Navigation
+@inject ISyncService syncService
+
+<AuthorizeView>
+    <Authorized>
+        <MudMenu AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+            <ActivatorContent>
+                <MudBadge Content="@numberOfItems" Color="Color.Primary" Overlap="true">
+                    <MudImage Height="40" Src="@(context.User.GetUserGraphPhoto() ?? "/img/no-profile-photo.png")" Class="rounded-circle" />
+                </MudBadge>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem OnClick="SynchronizeClick">
+                    <MudStack Row="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Sync" />
+                        <MudText>Synchronize</MudText>
+                    </MudStack>
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem OnClick="BeginLogout">
+                    <MudStack Row="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Logout" />
+                        <MudText>Sign Out</MudText>
+                    </MudStack>
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
+    </Authorized>
+    <NotAuthorized>
+        <MudLink Href="authentication/login">
+            <MudIcon Icon="@Icons.Material.Filled.Login" />
+        </MudLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private int numberOfItems = 1;
+
+    private async Task BeginLogout(MouseEventArgs args)
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+
+    private async Task SynchronizeClick(MouseEventArgs args)
+    {
+        if (numberOfItems > 0)
+        {
+            var name = await syncService.Synchronize();
+        }
+    }
+}

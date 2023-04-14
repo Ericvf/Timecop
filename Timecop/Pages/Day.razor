@@ -24,7 +24,7 @@
         <div class="@grid">
             @if (timeActivities.Count() > 0)
             {
-                <MudDataGrid Items="@timeActivities" Filterable="false" SortMode="@SortMode.None" Groupable="false" Dense="true">
+                <MudDataGrid Items="@timeActivities" Filterable="false" SortMode="@SortMode.None" Groupable="false" Dense="false">
                     <Columns>
                         <PropertyColumn Property="x => x.Start.ToLongTimeString()" Title="Start" />
                         <PropertyColumn Property="x => x.Stop.ToLongTimeString()" Title="Stop" />
