@@ -12,6 +12,12 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+#if DEBUG
+builder.Logging.AddFilter(
+    "Microsoft.AspNetCore.Components.WebAssembly.Authentication",
+    LogLevel.Debug);
+#endif
+
 builder.Services
     .AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) })
     .AddSingleton<ICheckInOutService, CheckInOutService>()
@@ -36,7 +42,9 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https:/
 
 builder.Services.AddMsalAuthentication<RemoteAuthenticationState, RemoteUserAccount>(options =>
 {
+    options.ProviderOptions.Cache.StoreAuthStateInCookie = true;
     options.ProviderOptions.Cache.CacheLocation = "localStorage";
+    options.ProviderOptions.LoginMode = "redirect";
 
     var scopes = builder.Configuration.GetValue<string>("GraphScopes");
     if (string.IsNullOrEmpty(scopes))

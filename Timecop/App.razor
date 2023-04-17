@@ -1,4 +1,5 @@
-﻿<CascadingAuthenticationState>
+﻿@inject IJSRuntime JS
+<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
@@ -9,7 +10,7 @@
                                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
                             </MudStack>
                         </MudItem>
-                           <MudItem Class="d-flex align-center justify-center mud-width-full">
+                        <MudItem Class="d-flex align-center justify-center mud-width-full">
                             <MudStack>
                                 <MudText>Authenticating previously logged in user</MudText>
                                 <MudLink Href="/authentication/logout">Click here if you get an error</MudLink>

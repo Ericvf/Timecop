@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" @ref="@_mudThemeProvider" Theme="_theme" />
 <MudDialogProvider />
