@@ -1,11 +1,11 @@
 ﻿<!-- Copyright (c) Microsoft Corporation.
      Licensed under the MIT license. -->
-
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @inject NavigationManager Navigation
 
 @code {
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo($"authentication/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}");
+        Navigation.NavigateToLogin("authentication/login");
     }
 }

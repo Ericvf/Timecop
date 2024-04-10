@@ -37,9 +37,11 @@
 </AuthorizeView>
 
 @code {
+    string? photoUri;
+
     private int numberOfItems = 1;
 
-    private async Task BeginLogout(MouseEventArgs args)
+    private void BeginLogout(MouseEventArgs args)
     {
         Navigation.NavigateToLogout("authentication/logout");
     }

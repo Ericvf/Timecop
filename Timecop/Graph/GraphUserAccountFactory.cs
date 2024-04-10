@@ -1,50 +1,31 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
-
-using System.Security.Claims;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication.Internal;
 using Microsoft.Graph;
-using Microsoft.Graph.Models.ODataErrors;
+using System.Security.Claims;
 
 namespace Timecop.Graph
 {
-    // Extends the AccountClaimsPrincipalFactory that builds
-    // a user identity from the identity token.
-    // This class adds additional claims to the user's ClaimPrincipal
-    // that hold values from Microsoft Graph
-    public class GraphUserAccountFactory
-        : AccountClaimsPrincipalFactory<RemoteUserAccount>
+    public class GraphUserAccountFactory : AccountClaimsPrincipalFactory<RemoteUserAccount>
     {
-        private readonly IAccessTokenProviderAccessor accessor;
         private readonly ILogger<GraphUserAccountFactory> logger;
+        private readonly GraphServiceClient graphServiceClient;
 
-        private readonly GraphClientFactory clientFactory;
-
-        public GraphUserAccountFactory(IAccessTokenProviderAccessor accessor,
-            GraphClientFactory clientFactory,
-            ILogger<GraphUserAccountFactory> logger)
-        : base(accessor)
+        public GraphUserAccountFactory(IAccessTokenProviderAccessor accessor, GraphServiceClient graphServiceClient, ILogger<GraphUserAccountFactory> logger)
+            : base(accessor)
         {
-            this.accessor = accessor;
-            this.clientFactory = clientFactory;
+            this.graphServiceClient = graphServiceClient;
             this.logger = logger;
         }
 
-        public async override ValueTask<ClaimsPrincipal?> CreateUserAsync(
-            RemoteUserAccount account,
-            RemoteAuthenticationUserOptions options)
+        public async override ValueTask<ClaimsPrincipal?> CreateUserAsync(RemoteUserAccount account, RemoteAuthenticationUserOptions options)
         {
-            // Create the base user
             var initialUser = await base.CreateUserAsync(account, options);
 
-            // If authenticated, we can call Microsoft Graph
             if (initialUser?.Identity?.IsAuthenticated ?? false)
             {
                 try
                 {
-                    // Add additional info from Graph to the identity
-                    await AddGraphInfoToClaims(accessor, initialUser);
+                    await AddCustomClaims(initialUser);
                 }
                 catch (AccessTokenNotAvailableException exception)
                 {
@@ -60,47 +41,30 @@ namespace Timecop.Graph
             return initialUser;
         }
 
-        private async Task AddGraphInfoToClaims(
-            IAccessTokenProviderAccessor accessor,
-            ClaimsPrincipal claimsPrincipal)
+        private async Task AddCustomClaims(ClaimsPrincipal claimsPrincipal)
         {
-            var graphClient = clientFactory.GetAuthenticatedClient();
-
-            // Get user profile including mailbox settings
-            // GET /me?$select=displayName,mail,mailboxSettings,userPrincipalName
-            var user = await graphClient.Me.GetAsync(config =>
+            var user = await graphServiceClient.Me.GetAsync(config =>
             {
-                // Request only the properties used to
-                // set claims
-                config.QueryParameters.Select = new [] { "displayName", "mail", "mailboxSettings", "userPrincipalName" };
+                config.QueryParameters.Select = new[] { "displayName", "mail" };
             });
 
-            if (user == null)
+            if (user != null)
             {
-                throw new Exception("Could not retrieve user from Microsoft Graph.");
-            }
+                logger.LogInformation($"Got user: {user.DisplayName} {user.Mail}");
+                claimsPrincipal.AddUserGraphInfo(user);
 
-            logger.LogInformation($"Got user: {user.DisplayName}");
-
-            claimsPrincipal.AddUserGraphInfo(user);
-
-            // Get user's photo
-            // GET /me/photos/48x48/$value
-            try
-            {
-                var photo = await graphClient.Me
-                .Photos["48x48"]  // Smallest standard size
-                .Content
-                .GetAsync();
-
-                claimsPrincipal.AddUserGraphPhoto(photo);
-            }
-            catch (ODataError err)
-            {
-                Console.WriteLine($"Photo error: ${err?.Error?.Code}");
-                if (err?.Error?.Code != "ImageNotFound")
+                try
                 {
-                    throw err ?? new Exception("Unknown error getting user photo.");
+                    var photo = await graphServiceClient.Me
+                        .Photos["48x48"]  // Smallest standard size
+                        .Content
+                        .GetAsync();
+
+                    claimsPrincipal.AddUserGraphPhoto(photo);
+                }
+                catch
+                {
+                    logger.LogError($"Error retrieving photo");
                 }
             }
         }

@@ -12,9 +12,9 @@ namespace Timecop.Services
         private readonly GraphServiceClient client;
         private readonly TimeActivityObjectStore timeActivityObjectStore;
 
-        public SyncService(Timecop.Graph.GraphClientFactory clientFactory, TimeActivityObjectStore timeActivityObjectStore)
+        public SyncService(GraphServiceClient client, TimeActivityObjectStore timeActivityObjectStore)
         {
-            client = clientFactory.GetAuthenticatedClient();
+            this.client = client;
             this.timeActivityObjectStore = timeActivityObjectStore;
         }
 

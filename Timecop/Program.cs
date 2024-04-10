@@ -12,12 +12,6 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-#if DEBUG
-builder.Logging.AddFilter(
-    "Microsoft.AspNetCore.Components.WebAssembly.Authentication",
-    LogLevel.Debug);
-#endif
-
 builder.Services
     .AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) })
     .AddSingleton<ICheckInOutService, CheckInOutService>()
@@ -38,32 +32,18 @@ builder.Services
         .AddObjectStore<CheckInStateObjectStore>()
         .AddObjectStore<TimeActivityObjectStore>();
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://graph.microsoft.com") });
+var baseUrl = builder.Configuration.GetSection("MicrosoftGraph")["BaseUrl"]!;
 
-builder.Services.AddMsalAuthentication<RemoteAuthenticationState, RemoteUserAccount>(options =>
+
+var scopes = builder.Configuration.GetSection("MicrosoftGraph:Scopes").Get<List<string>>();
+builder.Services.AddGraphClient(baseUrl, scopes);
+
+builder.Services.AddMsalAuthentication(options =>
 {
-    options.ProviderOptions.Cache.StoreAuthStateInCookie = true;
-    options.ProviderOptions.Cache.CacheLocation = "localStorage";
     options.ProviderOptions.LoginMode = "redirect";
-
-    var scopes = builder.Configuration.GetValue<string>("GraphScopes");
-    if (string.IsNullOrEmpty(scopes))
-    {
-        Console.WriteLine("WARNING: No permission scopes were found in the GraphScopes app setting. Using default User.Read.");
-        scopes = "User.Read";
-    }
-
-    foreach (var scope in scopes.Split(';'))
-    {
-        Console.WriteLine($"Adding {scope} to requested permissions");
-        options.ProviderOptions.DefaultAccessTokenScopes.Add(scope);
-    }
-
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("User.Read");
     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
 })
 .AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, RemoteUserAccount, GraphUserAccountFactory>();
-
-builder.Services.AddScoped<GraphClientFactory>();
-
 
 await builder.Build().RunAsync();
